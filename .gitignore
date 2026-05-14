@@ -3,8 +3,9 @@ backup.ini
 settings.ini
 profiles/
 
-# Kompilierte Binärdateien
-bin/
+# Installer-Hilfsdateien
+bin/Installer/*.lnk
+bin/**/*.sha256
 
 # PowerShell Studio Build-Dateien
 *.psbuild
