@@ -1,0 +1,17 @@
+# Benutzer-spezifische Konfiguration
+backup.ini
+settings.ini
+profiles/
+
+# Kompilierte Binärdateien
+bin/
+
+# PowerShell Studio Build-Dateien
+*.psbuild
+
+# Alte Versionen
+Source/
+
+# Temporäre Dateien
+*.tmp
+*.log
