@@ -1,4 +1,4 @@
-# Easy Robocopy Interface — ERi-Backup-App · v1.6.8.1
+# Easy Robocopy interface — ERi-Backup-App · v1.6.8.1
 
 A lightweight, modern Windows backup utility built with PowerShell and WinForms, powered by Microsoft's robust Robocopy engine.
 
