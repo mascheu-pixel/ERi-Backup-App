@@ -1,7 +1,7 @@
 ﻿#Requires -Version 5.1
 #==============================================================================
 #  Robocopy Backup  -  PowerShell Studio Format
-#  Version  : 1.6.8.1
+#  Version  : 1.6.8.5
 #  Author   : schremar:ITServices
 #  Copyright: (c) 2026 schremar.com
 #==============================================================================
@@ -212,7 +212,7 @@ public static class VistaFilePicker {
 #endregion
 
 #region ── Globale Konstanten ──────────────────────────────────────────────────
-$APP_VERSION   = '1.6.8.1'
+$APP_VERSION   = '1.6.8.5'
 $APP_COPYRIGHT = "schremar:ITServices $([char]169) 2026"
 $APP_URL       = 'https://www.schremar.com/'
 
@@ -256,6 +256,8 @@ $LANG_STRINGS = @{
         BtnQuelleFolder = 'Source: Folder'; BtnQuelleFile = 'Source: File'
         ChkVerify       = 'SHA256 checksum verification after backup'
         ChkDelete       = 'Delete destination folder BEFORE backup (Warning: irreversible!)'
+        ChkDeleteFile   = 'Delete destination file BEFORE backup (Warning: irreversible!)'
+        MsgDeleteFileWarn  = "WARNING: Destination file will be deleted irreversibly!`n`nFile: {0}`n`nContinue?"
         BtnStart        = '>  Start Backup'; BtnRunning = '...  Backup running'
         BtnReset        = 'Reset';          BtnSave    = 'Save Profile'; BtnLoad  = 'Load Profile'
         BtnQuit         = 'Quit'
@@ -310,6 +312,8 @@ $LANG_STRINGS = @{
         BtnQuelleFolder = 'Quelle: Ordner'; BtnQuelleFile = 'Quelle: Datei'
         ChkVerify       = 'SHA256-Pruefsummen-Verifikation nach dem Backup'
         ChkDelete       = 'Ziel-Ordner VOR dem Backup loeschen (Achtung: unwiderruflich!)'
+        ChkDeleteFile   = 'Ziel-Datei VOR dem Backup loeschen (Achtung: unwiderruflich!)'
+        MsgDeleteFileWarn  = "ACHTUNG: Ziel-Datei wird unwiderruflich geloescht!`n`nDatei: {0}`n`nFortfahren?"
         BtnStart        = '>  Backup starten'; BtnRunning = '...  Backup laeuft'
         BtnReset        = 'Reset';          BtnSave    = 'Ini speichern'; BtnLoad = 'Ini laden'
         BtnQuit         = 'Beenden'
@@ -364,6 +368,8 @@ $LANG_STRINGS = @{
         BtnQuelleFolder = 'Source: Dossier'; BtnQuelleFile = 'Source: Fichier'
         ChkVerify       = 'Vérification SHA256 après la sauvegarde'
         ChkDelete       = 'Supprimer le dossier cible AVANT la sauvegarde (Attention: irréversible!)'
+        ChkDeleteFile   = 'Supprimer le fichier cible AVANT la sauvegarde (Attention: irréversible!)'
+        MsgDeleteFileWarn  = "ATTENTION: Le fichier cible sera supprimé irréversiblement!`n`nFichier: {0}`n`nContinuer?"
         BtnStart        = '>  Démarrer sauvegarde'; BtnRunning = '...  Sauvegarde en cours'
         BtnReset        = 'Réinitialiser'; BtnSave = 'Enreg. profil'; BtnLoad = 'Charger profil'
         BtnQuit         = 'Quitter'
@@ -418,6 +424,8 @@ $LANG_STRINGS = @{
         BtnQuelleFolder = 'Origen: Carpeta'; BtnQuelleFile = 'Origen: Archivo'
         ChkVerify       = 'Verificación SHA256 después de la copia de seguridad'
         ChkDelete       = 'Eliminar carpeta destino ANTES de la copia (Advertencia: irreversible!)'
+        ChkDeleteFile   = 'Eliminar archivo destino ANTES de la copia (Advertencia: irreversible!)'
+        MsgDeleteFileWarn  = "ATENCIÓN: El archivo destino se eliminará irreversiblemente!`n`nArchivo: {0}`n`n¿Continuar?"
         BtnStart        = '>  Iniciar copia'; BtnRunning = '...  Copia en curso'
         BtnReset        = 'Restablecer';    BtnSave    = 'Guardar perfil'; BtnLoad = 'Cargar perfil'
         BtnQuit         = 'Salir'
@@ -472,6 +480,8 @@ $LANG_STRINGS = @{
         BtnQuelleFolder = 'Sorgente: Cartella'; BtnQuelleFile = 'Sorgente: File'
         ChkVerify       = 'Verifica SHA256 dopo il backup'
         ChkDelete       = 'Elimina cartella destinazione PRIMA del backup (Attenzione: irreversibile!)'
+        ChkDeleteFile   = 'Elimina file destinazione PRIMA del backup (Attenzione: irreversibile!)'
+        MsgDeleteFileWarn  = "ATTENZIONE: Il file destinazione verrà eliminato irreversibilmente!`n`nFile: {0}`n`nContinuare?"
         BtnStart        = '>  Avvia backup'; BtnRunning = '...  Backup in corso'
         BtnReset        = 'Reimposta';      BtnSave    = 'Salva profilo'; BtnLoad = 'Carica profilo'
         BtnQuit         = 'Esci'
@@ -633,6 +643,7 @@ function GenerateForm {
     $secOptContent   = New-Object 'System.Windows.Forms.Panel'
     $chkVerify       = New-Object 'System.Windows.Forms.CheckBox'
     $chkDelete       = New-Object 'System.Windows.Forms.CheckBox'
+    $chkDeleteFile   = New-Object 'System.Windows.Forms.CheckBox'
     # Buttons / Status / Log
     $panelButtons        = New-Object 'System.Windows.Forms.Panel'
     $btnStart            = New-Object 'System.Windows.Forms.Button'
@@ -706,7 +717,8 @@ function GenerateForm {
     }
 
     # Einfacher Eingabe-Dialog (fuer Profil-Name beim Speichern)
-    function Show-InputBox ($prompt, $default) {
+    # $prefix: optionaler fester Präfix (z.B. 'File_' / 'Folder_') – nicht editierbar
+    function Show-InputBox ($prompt, $default, $prefix = '') {
         $f = New-Object 'System.Windows.Forms.Form'
         $f.Text            = $T.DlgSaveTitle
         $f.ClientSize      = New-Sz 380 145
@@ -722,10 +734,26 @@ function GenerateForm {
         $lbl.Size     = New-Sz 356 20
         $lbl.ForeColor = $C_FG2; $lbl.BackColor = $C_BG
 
+        # Fester Präfix-Label (nicht editierbar) wenn Präfix angegeben
+        $tbX = 12; $tbW = 356
+        if ($prefix) {
+            $lblPrefix = New-Object 'System.Windows.Forms.Label'
+            $lblPrefix.Text        = $prefix
+            $lblPrefix.Location    = New-Pt 12 38
+            $lblPrefix.Size        = New-Sz 72 26
+            $lblPrefix.BackColor   = $C_BG3
+            $lblPrefix.ForeColor   = $C_FG2
+            $lblPrefix.BorderStyle = 'FixedSingle'
+            $lblPrefix.TextAlign   = 'MiddleCenter'
+            $lblPrefix.Font        = $F_SEC
+            $f.Controls.Add($lblPrefix)
+            $tbX = 86; $tbW = 282
+        }
+
         $tb = New-Object 'System.Windows.Forms.TextBox'
         $tb.Text        = $default
-        $tb.Location    = New-Pt 12 38
-        $tb.Size        = New-Sz 356 26
+        $tb.Location    = New-Pt $tbX 38
+        $tb.Size        = New-Sz $tbW 26
         $tb.BackColor   = $C_BG2; $tb.ForeColor = $C_FG
         $tb.BorderStyle = 'FixedSingle'
 
@@ -752,7 +780,7 @@ function GenerateForm {
         $f.AcceptButton = $btnOK; $f.CancelButton = $btnCancel
         $f.Controls.AddRange(@($lbl, $tb, $btnOK, $btnCancel))
         $tb.Select(); $tb.SelectAll()
-        if ($f.ShowDialog($formMain) -eq 'OK') { return $tb.Text.Trim() }
+        if ($f.ShowDialog($formMain) -eq 'OK') { return $prefix + $tb.Text.Trim() }
         return $null
     }
 
@@ -995,6 +1023,10 @@ function GenerateForm {
         } else {
             [System.Char]::ConvertFromUtf32(0x1F4C1)   # 📁
         }
+        # chkDeleteFile nur im Datei-Modus aktiv
+        $isFile = ($mode -eq 'file')
+        $chkDeleteFile.Enabled = $isFile
+        if (-not $chkDeleteFile.Enabled) { $chkDeleteFile.Checked = $false }
     }
 
     function Update-StartButton {
@@ -1172,7 +1204,8 @@ function GenerateForm {
         $lblStatusPaths.Text      = ''
         $lblStatusPaths.ForeColor = $C_FG2
         Set-QuelleMode 'folder'
-        $chkDelete.Checked = $false
+        $chkDelete.Checked     = $false
+        $chkDeleteFile.Checked = $false
         # Default Log-Pfad wieder eintragen wenn aktiviert
         if ($script:defaultLogEnabled -and $script:defaultLogPath) {
             Set-PathLabel $lblLog $script:defaultLogPath
@@ -1188,7 +1221,8 @@ function GenerateForm {
         $profilesDir = Join-Path $appDir 'profiles'
         if (-not (Test-Path $profilesDir)) { New-Item -ItemType Directory -Path $profilesDir | Out-Null }
 
-        $name = Show-InputBox $T.DlgSavePrompt $T.DlgSaveDefault
+        $prefix = if ($script:quelleMode -eq 'file') { 'File_' } else { 'Folder_' }
+        $name = Show-InputBox $T.DlgSavePrompt 'Backup' $prefix
         if (-not $name) { return }
         $name = $name -replace '[\\/:*?"<>|]', '_'
         if (-not $name.ToLower().EndsWith('.ini')) { $name += '.ini' }
@@ -1202,8 +1236,9 @@ function GenerateForm {
             "SourceMode  = $($script:quelleMode)",
             '',
             '[Options]',
-            "Verify = $($chkVerify.Checked)",
-            "Delete = $($chkDelete.Checked)"
+            "Verify      = $($chkVerify.Checked)",
+            "Delete      = $($chkDelete.Checked)",
+            "DeleteFile  = $($chkDeleteFile.Checked)"
         ) | Set-Content -Path $file -Encoding UTF8
         Set-Status ($T.StatusSaved -f $name)
     }
@@ -1213,7 +1248,7 @@ function GenerateForm {
         $file = Show-ProfileList $profilesDir
         if (-not $file) { return }
 
-        $cfg = @{ Source=''; Destination=''; LogFolder=''; Verify='True'; Delete='False'; SourceMode='folder' }
+        $cfg = @{ Source=''; Destination=''; LogFolder=''; Verify='True'; Delete='False'; DeleteFile='False'; SourceMode='folder' }
         Get-Content $file -Encoding UTF8 | ForEach-Object {
             if ($_ -match '^\s*(\w+)\s*=\s*(.*)$') {
                 $k = $matches[1].Trim(); $v = $matches[2].Trim()
@@ -1224,8 +1259,9 @@ function GenerateForm {
         if ($cfg.Source)      { Set-PathLabel $lblQuelle $cfg.Source }
         if ($cfg.Destination) { Set-PathLabel $lblZiel   $cfg.Destination }
         if ($cfg.LogFolder)   { Set-PathLabel $lblLog    $cfg.LogFolder }
-        $chkVerify.Checked = ($cfg.Verify -eq 'True')
-        $chkDelete.Checked = ($cfg.Delete -eq 'True')
+        $chkVerify.Checked     = ($cfg.Verify      -eq 'True')
+        $chkDelete.Checked     = ($cfg.Delete      -eq 'True')
+        $chkDeleteFile.Checked = ($cfg.DeleteFile  -eq 'True')
         Write-Ini $lblQuelle.Tag $lblZiel.Tag $lblLog.Tag $script:quelleMode
         Update-StartButton
         Update-PathStatus
@@ -1264,6 +1300,15 @@ function GenerateForm {
             $ans = [System.Windows.Forms.MessageBox]::Show(
                 ($T.MsgDeleteWarn -f $dst), $T.MsgDeleteTitle, 'YesNo', 'Warning')
             if ($ans -ne 'Yes') { return }
+        }
+        if ($chkDeleteFile.Checked -and $script:quelleMode -eq 'file') {
+            $dstFile = Join-Path $dst ([System.IO.Path]::GetFileName($src))
+            if (Test-Path $dstFile) {
+                $ans = [System.Windows.Forms.MessageBox]::Show(
+                    ($T.MsgDeleteFileWarn -f $dstFile), $T.MsgDeleteTitle, 'YesNo', 'Warning')
+                if ($ans -ne 'Yes') { return }
+                Remove-Item $dstFile -Force -ErrorAction SilentlyContinue
+            }
         }
 
         $btnStart.Enabled    = $false
@@ -1654,7 +1699,7 @@ function GenerateForm {
 
     #== Optionen-Sektion =======================================================
     $secOpt.Dock      = 'Top'
-    $secOpt.Height    = 90
+    $secOpt.Height    = 118
     $secOpt.BackColor = $C_BG
 
     # Content ZUERST (index 0, Fill)
@@ -1676,8 +1721,18 @@ function GenerateForm {
         $cb.Anchor    = $ANC_TLR
         $parent.Controls.Add($cb)
     }
-    Set-CheckBox $chkVerify $secOptContent $T.ChkVerify 4  $true
-    Set-CheckBox $chkDelete $secOptContent $T.ChkDelete 32 $false
+    Set-CheckBox $chkVerify      $secOptContent $T.ChkVerify     4  $true
+    Set-CheckBox $chkDelete      $secOptContent $T.ChkDelete     32 $false
+    Set-CheckBox $chkDeleteFile  $secOptContent $T.ChkDeleteFile 60 $false
+    $chkDeleteFile.Enabled = $false   # initial Ordner-Modus → ausgegraut
+
+    # Im Datei-Modus: chkDelete deaktiviert chkDeleteFile (Ordner-Löschung schliesst Datei ein)
+    $chkDelete.add_CheckedChanged({
+        if ($script:quelleMode -eq 'file') {
+            $chkDeleteFile.Enabled = -not $chkDelete.Checked
+            if ($chkDelete.Checked) { $chkDeleteFile.Checked = $false }
+        }
+    })
 
     #-- spacer2 ---------------------------------------------------------------
     $sp2 = New-Object 'System.Windows.Forms.Panel'
