@@ -1,7 +1,7 @@
 ﻿#Requires -Version 5.1
 #==============================================================================
 #  Robocopy Backup  -  PowerShell Studio Format
-#  Version  : 1.6.8.5
+#  Version  : 1.7.1.1
 #  Author   : schremar:ITServices
 #  Copyright: (c) 2026 schremar.com
 #==============================================================================
@@ -212,7 +212,7 @@ public static class VistaFilePicker {
 #endregion
 
 #region ── Globale Konstanten ──────────────────────────────────────────────────
-$APP_VERSION   = '1.6.8.5'
+$APP_VERSION   = '1.7.1.1'
 $APP_COPYRIGHT = "schremar:ITServices $([char]169) 2026"
 $APP_URL       = 'https://www.schremar.com/'
 
