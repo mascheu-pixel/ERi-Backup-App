@@ -1,7 +1,7 @@
 ﻿#Requires -Version 5.1
 #==============================================================================
 #  Robocopy Backup  -  PowerShell Studio Format
-#  Version  : 1.7.1.1
+#  Version  : 1.7.5.1
 #  Author   : schremar:ITServices
 #  Copyright: (c) 2026 schremar.com
 #==============================================================================
@@ -212,7 +212,7 @@ public static class VistaFilePicker {
 #endregion
 
 #region ── Globale Konstanten ──────────────────────────────────────────────────
-$APP_VERSION   = '1.7.1.1'
+$APP_VERSION   = '1.7.5.1'
 $APP_COPYRIGHT = "schremar:ITServices $([char]169) 2026"
 $APP_URL       = 'https://www.schremar.com/'
 
@@ -227,7 +227,7 @@ $SettingsFile = Join-Path $script:appDir 'settings.ini'
 
 #region ── Einstellungen (settings.ini) ────────────────────────────────────────
 function Read-AppSettings {
-    $s = @{ Language = 'en'; DefaultLogPathEnabled = 'false'; DefaultLogPath = '' }
+    $s = @{ Language = 'en'; DefaultLogPathEnabled = 'false'; DefaultLogPath = ''; DisableFolderDeleteInFileMode = 'true'; Theme = 'dark' }
     if (Test-Path $SettingsFile) {
         Get-Content $SettingsFile -Encoding UTF8 | ForEach-Object {
             if ($_ -match '^\s*(\w+)\s*=\s*(.*)$') {
@@ -238,11 +238,13 @@ function Read-AppSettings {
     }
     return $s
 }
-function Write-AppSettings ($lang, $defaultLogEnabled = 'false', $defaultLogPath = '') {
+function Write-AppSettings ($lang, $defaultLogEnabled = 'false', $defaultLogPath = '', $disableFolderDeleteInFileMode = 'true', $theme = 'dark') {
     @('[Settings]',
-      "Language             = $lang",
-      "DefaultLogPathEnabled = $defaultLogEnabled",
-      "DefaultLogPath        = $defaultLogPath"
+      "Language                     = $lang",
+      "DefaultLogPathEnabled         = $defaultLogEnabled",
+      "DefaultLogPath                = $defaultLogPath",
+      "DisableFolderDeleteInFileMode = $disableFolderDeleteInFileMode",
+      "Theme                        = $theme"
     ) | Set-Content -Path $SettingsFile -Encoding UTF8
 }
 #endregion
@@ -259,7 +261,7 @@ $LANG_STRINGS = @{
         ChkDeleteFile   = 'Delete destination file BEFORE backup (Warning: irreversible!)'
         MsgDeleteFileWarn  = "WARNING: Destination file will be deleted irreversibly!`n`nFile: {0}`n`nContinue?"
         BtnStart        = '>  Start Backup'; BtnRunning = '...  Backup running'
-        BtnReset        = 'Reset';          BtnSave    = 'Save Profile'; BtnLoad  = 'Load Profile'
+        BtnReset        = 'Reset';          BtnSave    = 'Save';         BtnLoad  = 'Load'
         BtnQuit         = 'Quit'
         LblNoPath       = '(no path selected)'
         StatusReady     = 'Ready.';         StatusRunning = 'Robocopy running...'
@@ -286,10 +288,13 @@ $LANG_STRINGS = @{
         DlgDelConfirm   = "Delete profile?`n`n{0}"; DlgDelTitle = 'Confirm'
         BtnOK           = 'OK';             BtnCancel  = 'Cancel';       BtnDelete  = 'Delete'
         DlgLangTitle    = 'Settings';           DlgLangPrompt = 'Select language:'
-        DlgLangRestart  = "Language changed.`nPlease close and restart the application."
+        DlgLangRestart  = "Settings changed.`nPlease close and restart the application."
+        DlgThemeSection = 'Appearance'
+        DlgThemeDark    = '🌙  Dark';          DlgThemeLight = '☀  Light'
         DlgDefaultLogSection = 'Default LogFile Path'
         DlgDefaultLogEnabled = 'Always pre-fill log path on start and reset'
         DlgDefaultLogFolder  = 'Select default log folder'
+        DlgDisableFolderDeleteInFileMode = 'Disable "Delete folder" option in file mode'
         LogStarted      = '[{0}] Backup started'
         LogSrc          = '  Source : {0}'; LogDst = '  Dest   : {0}'; LogFile2 = '  Log    : {0}'
         LogDeleting     = 'Deleting destination folder...'
@@ -315,7 +320,7 @@ $LANG_STRINGS = @{
         ChkDeleteFile   = 'Ziel-Datei VOR dem Backup loeschen (Achtung: unwiderruflich!)'
         MsgDeleteFileWarn  = "ACHTUNG: Ziel-Datei wird unwiderruflich geloescht!`n`nDatei: {0}`n`nFortfahren?"
         BtnStart        = '>  Backup starten'; BtnRunning = '...  Backup laeuft'
-        BtnReset        = 'Reset';          BtnSave    = 'Ini speichern'; BtnLoad = 'Ini laden'
+        BtnReset        = 'Reset';          BtnSave    = 'Speichern';     BtnLoad = 'Laden'
         BtnQuit         = 'Beenden'
         LblNoPath       = '(kein Pfad gewaehlt)'
         StatusReady     = 'Bereit.';        StatusRunning = 'Robocopy laeuft...'
@@ -342,10 +347,13 @@ $LANG_STRINGS = @{
         DlgDelConfirm   = "Profil loeschen?`n`n{0}"; DlgDelTitle = 'Bestaetigung'
         BtnOK           = 'OK';             BtnCancel  = 'Abbrechen';    BtnDelete  = 'Loeschen'
         DlgLangTitle    = 'Einstellungen';      DlgLangPrompt = 'Sprache auswaehlen:'
-        DlgLangRestart  = "Sprache geaendert.`nBitte das Programm beenden und erneut starten."
+        DlgLangRestart  = "Einstellungen geaendert.`nBitte das Programm beenden und erneut starten."
+        DlgThemeSection = 'Erscheinungsbild'
+        DlgThemeDark    = '🌙  Dunkel';        DlgThemeLight = '☀  Hell'
         DlgDefaultLogSection = 'Standard LogFile-Pfad'
         DlgDefaultLogEnabled = 'Log-Pfad beim Start und Reset immer voreintragen'
         DlgDefaultLogFolder  = 'Standard Log-Ordner auswaehlen'
+        DlgDisableFolderDeleteInFileMode = 'Im Datei-Mode Option "Ordner loeschen" sperren'
         LogStarted      = '[{0}] Backup gestartet'
         LogSrc          = '  Quelle : {0}'; LogDst = '  Ziel   : {0}'; LogFile2 = '  Log    : {0}'
         LogDeleting     = 'Ziel-Ordner wird geloescht...'
@@ -370,8 +378,8 @@ $LANG_STRINGS = @{
         ChkDelete       = 'Supprimer le dossier cible AVANT la sauvegarde (Attention: irréversible!)'
         ChkDeleteFile   = 'Supprimer le fichier cible AVANT la sauvegarde (Attention: irréversible!)'
         MsgDeleteFileWarn  = "ATTENTION: Le fichier cible sera supprimé irréversiblement!`n`nFichier: {0}`n`nContinuer?"
-        BtnStart        = '>  Démarrer sauvegarde'; BtnRunning = '...  Sauvegarde en cours'
-        BtnReset        = 'Réinitialiser'; BtnSave = 'Enreg. profil'; BtnLoad = 'Charger profil'
+        BtnStart        = '>  Démarrer';             BtnRunning = '...  En cours'
+        BtnReset        = 'Réinitialiser'; BtnSave = 'Enregistrer';   BtnLoad = 'Charger'
         BtnQuit         = 'Quitter'
         LblNoPath       = '(aucun chemin sélectionné)'
         StatusReady     = 'Prêt.';         StatusRunning = 'Robocopy en cours...'
@@ -398,10 +406,13 @@ $LANG_STRINGS = @{
         DlgDelConfirm   = "Supprimer le profil?`n`n{0}"; DlgDelTitle = 'Confirmation'
         BtnOK           = 'OK';             BtnCancel  = 'Annuler';      BtnDelete  = 'Supprimer'
         DlgLangTitle    = 'Paramètres';        DlgLangPrompt = 'Sélectionner la langue:'
-        DlgLangRestart  = "Langue modifiée.`nVeuillez quitter et redémarrer l'application."
+        DlgLangRestart  = "Paramètres modifiés.`nVeuillez quitter et redémarrer l'application."
+        DlgThemeSection = 'Apparence'
+        DlgThemeDark    = '🌙  Sombre';        DlgThemeLight = '☀  Clair'
         DlgDefaultLogSection = 'Chemin journal par défaut'
         DlgDefaultLogEnabled = 'Toujours préremplir le chemin journal au démarrage'
         DlgDefaultLogFolder  = 'Sélectionner le dossier journal par défaut'
+        DlgDisableFolderDeleteInFileMode = 'En mode fichier, désactiver "Supprimer dossier"'
         LogStarted      = '[{0}] Sauvegarde démarrée'
         LogSrc          = '  Source : {0}'; LogDst = '  Cible  : {0}'; LogFile2 = '  Journal: {0}'
         LogDeleting     = 'Suppression du dossier cible...'
@@ -427,7 +438,7 @@ $LANG_STRINGS = @{
         ChkDeleteFile   = 'Eliminar archivo destino ANTES de la copia (Advertencia: irreversible!)'
         MsgDeleteFileWarn  = "ATENCIÓN: El archivo destino se eliminará irreversiblemente!`n`nArchivo: {0}`n`n¿Continuar?"
         BtnStart        = '>  Iniciar copia'; BtnRunning = '...  Copia en curso'
-        BtnReset        = 'Restablecer';    BtnSave    = 'Guardar perfil'; BtnLoad = 'Cargar perfil'
+        BtnReset        = 'Restablecer';    BtnSave    = 'Guardar';        BtnLoad = 'Cargar'
         BtnQuit         = 'Salir'
         LblNoPath       = '(ninguna ruta seleccionada)'
         StatusReady     = 'Listo.';         StatusRunning = 'Robocopy en ejecución...'
@@ -454,10 +465,13 @@ $LANG_STRINGS = @{
         DlgDelConfirm   = "¿Eliminar perfil?`n`n{0}"; DlgDelTitle = 'Confirmación'
         BtnOK           = 'OK';             BtnCancel  = 'Cancelar';     BtnDelete  = 'Eliminar'
         DlgLangTitle    = 'Configuración';     DlgLangPrompt = 'Seleccionar idioma:'
-        DlgLangRestart  = "Idioma cambiado.`nPor favor cierre y reinicie la aplicación."
+        DlgLangRestart  = "Configuración cambiada.`nPor favor cierre y reinicie la aplicación."
+        DlgThemeSection = 'Apariencia'
+        DlgThemeDark    = '🌙  Oscuro';        DlgThemeLight = '☀  Claro'
         DlgDefaultLogSection = 'Ruta de registro predeterminada'
         DlgDefaultLogEnabled = 'Rellenar siempre la ruta de log al inicio y reset'
         DlgDefaultLogFolder  = 'Seleccionar carpeta de registro predeterminada'
+        DlgDisableFolderDeleteInFileMode = 'En modo archivo, desactivar "Eliminar carpeta"'
         LogStarted      = '[{0}] Copia iniciada'
         LogSrc          = '  Origen : {0}'; LogDst = '  Destino: {0}'; LogFile2 = '  Registro: {0}'
         LogDeleting     = 'Eliminando carpeta destino...'
@@ -483,7 +497,7 @@ $LANG_STRINGS = @{
         ChkDeleteFile   = 'Elimina file destinazione PRIMA del backup (Attenzione: irreversibile!)'
         MsgDeleteFileWarn  = "ATTENZIONE: Il file destinazione verrà eliminato irreversibilmente!`n`nFile: {0}`n`nContinuare?"
         BtnStart        = '>  Avvia backup'; BtnRunning = '...  Backup in corso'
-        BtnReset        = 'Reimposta';      BtnSave    = 'Salva profilo'; BtnLoad = 'Carica profilo'
+        BtnReset        = 'Reimposta';      BtnSave    = 'Salva';         BtnLoad = 'Carica'
         BtnQuit         = 'Esci'
         LblNoPath       = '(nessun percorso selezionato)'
         StatusReady     = 'Pronto.';        StatusRunning = 'Robocopy in esecuzione...'
@@ -510,10 +524,13 @@ $LANG_STRINGS = @{
         DlgDelConfirm   = "Eliminare il profilo?`n`n{0}"; DlgDelTitle = 'Conferma'
         BtnOK           = 'OK';             BtnCancel  = 'Annulla';      BtnDelete  = 'Elimina'
         DlgLangTitle    = 'Impostazioni';      DlgLangPrompt = 'Seleziona lingua:'
-        DlgLangRestart  = "Lingua modificata.`nChiudere e riavviare l'applicazione."
+        DlgLangRestart  = "Impostazioni modificate.`nChiudere e riavviare l'applicazione."
+        DlgThemeSection = 'Aspetto'
+        DlgThemeDark    = '🌙  Scuro';         DlgThemeLight = '☀  Chiaro'
         DlgDefaultLogSection = 'Percorso log predefinito'
         DlgDefaultLogEnabled = 'Precompila sempre il percorso log allavvio e reset'
         DlgDefaultLogFolder  = 'Seleziona cartella log predefinita'
+        DlgDisableFolderDeleteInFileMode = 'In modalità file, disattiva "Elimina cartella"'
         LogStarted      = '[{0}] Backup avviato'
         LogSrc          = '  Sorgente: {0}'; LogDst = '  Dest.   : {0}'; LogFile2 = '  Log     : {0}'
         LogDeleting     = 'Eliminazione cartella destinazione...'
@@ -537,8 +554,10 @@ $_lang = if ($LANG_STRINGS.ContainsKey($_s.Language)) { $_s.Language } else { 'e
 $T     = $LANG_STRINGS[$_lang]          # $T = aktive Uebersetzungstabelle
 $CURRENT_LANG = $_lang
 # Default LogFile-Pfad Einstellungen
-$script:defaultLogEnabled = ($_s.DefaultLogPathEnabled -eq 'true')
-$script:defaultLogPath    = $_s.DefaultLogPath
+$script:defaultLogEnabled             = ($_s.DefaultLogPathEnabled -eq 'true')
+$script:defaultLogPath                = $_s.DefaultLogPath
+$script:disableFolderDeleteInFileMode = ($_s.DisableFolderDeleteInFileMode -ne 'false')
+$script:currentTheme                  = if ($_s.Theme -eq 'light') { 'light' } else { 'dark' }
 #endregion
 
 #region ── Farben und Schriften ────────────────────────────────────────────────
@@ -547,23 +566,45 @@ function New-Font  ($name, $size, $style = 'Regular') {
     New-Object System.Drawing.Font($name, $size, [System.Drawing.FontStyle]::$style)
 }
 
-$C_BG     = New-Color '#2F4F4F'
-$C_BG2    = New-Color '#2b2f55'
-$C_BG3    = New-Color '#263d3d'    # etwas dunkler fuer Sektions-Header
-$C_HDR    = New-Color '#6e56b3'
-$C_ACCENT = New-Color '#8b5cf6'
-$C_ACCH   = New-Color '#7c3aed'
-$C_OK     = New-Color '#4ade80'
-$C_ERR    = New-Color '#f87171'
-$C_WARN   = New-Color '#fbbf24'
-$C_DOT_OK   = New-Color '#22c55e'   # grüner Punkt  – Pfad erreichbar
-$C_DOT_WARN = New-Color '#f97316'   # oranger Punkt – Pfad nicht erreichbar
-$C_FG     = New-Color '#f0f4ff'
-$C_FG2    = New-Color '#a5b4fc'
-$C_LOGBG  = New-Color '#13152b'
-$C_FOOT   = New-Color '#1a1a2e'
-$C_DIMTXT = New-Color '#64748b'
-$C_SEP    = New-Color '#4a6060'    # Trennlinie Sektionen
+if ($script:currentTheme -eq 'light') {
+    $C_BG     = New-Color '#d6e0ec'   # heller Hintergrund
+    $C_BG2    = New-Color '#c2cedc'   # etwas dunkler für Panels/Inputs
+    $C_BG3    = New-Color '#4a3d8f'   # Sektions-Header (lila, weisse Schrift)
+    $C_HDR    = New-Color '#5546a0'   # TopBar lila
+    $C_ACCENT = New-Color '#6d4edc'   # Akzent violett (dunkler für helle BG)
+    $C_ACCH   = New-Color '#5c3dc8'   # Hover
+    $C_OK     = New-Color '#16a34a'   # Grün (dunkler für helle BG)
+    $C_ERR    = New-Color '#dc2626'   # Rot
+    $C_WARN   = New-Color '#d97706'   # Amber
+    $C_DOT_OK   = New-Color '#16a34a'
+    $C_DOT_WARN = New-Color '#ea580c'
+    $C_FG     = New-Color '#1e2235'   # Dunkeltext
+    $C_FG2    = New-Color '#4a5568'   # Gedimmter Text
+    $C_LOGBG  = New-Color '#f8faff'   # Fast-weisser Log-Bereich
+    $C_FOOT   = New-Color '#c8d4e8'   # Helle Fusszeile
+    $C_DIMTXT = New-Color '#94a3b8'
+    $C_SEP    = New-Color '#c0cad8'   # Helle Trennlinie
+    $C_INI_HOVER = New-Color '#c4b4f0'  # Helles Violett für Speichern/Laden Hover
+} else {
+    $C_BG     = New-Color '#2F4F4F'
+    $C_BG2    = New-Color '#2b2f55'
+    $C_BG3    = New-Color '#263d3d'   # etwas dunkler fuer Sektions-Header
+    $C_HDR    = New-Color '#6e56b3'
+    $C_ACCENT = New-Color '#8b5cf6'
+    $C_ACCH   = New-Color '#7c3aed'
+    $C_OK     = New-Color '#4ade80'
+    $C_ERR    = New-Color '#f87171'
+    $C_WARN   = New-Color '#fbbf24'
+    $C_DOT_OK   = New-Color '#22c55e'  # grüner Punkt  – Pfad erreichbar
+    $C_DOT_WARN = New-Color '#f97316'  # oranger Punkt – Pfad nicht erreichbar
+    $C_FG     = New-Color '#f0f4ff'
+    $C_FG2    = New-Color '#a5b4fc'
+    $C_LOGBG  = New-Color '#13152b'
+    $C_FOOT   = New-Color '#1a1a2e'
+    $C_DIMTXT = New-Color '#64748b'
+    $C_SEP    = New-Color '#4a6060'   # Trennlinie Sektionen
+    $C_INI_HOVER = New-Color '#3a3a5e'  # Dunkles Violett für Speichern/Laden Hover
+}
 
 $F_UI   = New-Font 'Segoe UI' 11
 $F_BOLD = New-Font 'Segoe UI' 11 'Bold'
@@ -644,6 +685,9 @@ function GenerateForm {
     $chkVerify       = New-Object 'System.Windows.Forms.CheckBox'
     $chkDelete       = New-Object 'System.Windows.Forms.CheckBox'
     $chkDeleteFile   = New-Object 'System.Windows.Forms.CheckBox'
+    $lblDotVerify    = New-Object 'System.Windows.Forms.Label'
+    $lblDotDelete    = New-Object 'System.Windows.Forms.Label'
+    $lblDotDeleteFile= New-Object 'System.Windows.Forms.Label'
     # Buttons / Status / Log
     $panelButtons        = New-Object 'System.Windows.Forms.Panel'
     $btnStart            = New-Object 'System.Windows.Forms.Button'
@@ -668,7 +712,7 @@ function GenerateForm {
     #region ── Interne Hilfsfunktionen ────────────────────────────────────────
     function Set-PathLabel ($lbl, $path) {
         $lbl.Text      = $path
-        $lbl.ForeColor = [System.Drawing.Color]::White
+        $lbl.ForeColor = $C_FG
         $lbl.Tag       = $path
     }
 
@@ -741,8 +785,8 @@ function GenerateForm {
             $lblPrefix.Text        = $prefix
             $lblPrefix.Location    = New-Pt 12 38
             $lblPrefix.Size        = New-Sz 72 26
-            $lblPrefix.BackColor   = $C_BG3
-            $lblPrefix.ForeColor   = $C_FG2
+            $lblPrefix.BackColor   = $C_ACCENT
+            $lblPrefix.ForeColor   = [System.Drawing.Color]::White
             $lblPrefix.BorderStyle = 'FixedSingle'
             $lblPrefix.TextAlign   = 'MiddleCenter'
             $lblPrefix.Font        = $F_SEC
@@ -870,7 +914,7 @@ function GenerateForm {
     function Show-LangDialog {
         $f = New-Object 'System.Windows.Forms.Form'
         $f.Text            = $T.DlgLangTitle
-        $f.ClientSize      = New-Sz 420 370
+        $f.ClientSize      = New-Sz 420 462
         $f.StartPosition   = 'CenterParent'
         $f.FormBorderStyle = 'FixedDialog'
         $f.MaximizeBox     = $false; $f.MinimizeBox = $false
@@ -900,30 +944,66 @@ function GenerateForm {
             $y += 28
         }
 
-        # ── Trennlinie ───────────────────────────────────────────────────
+        # ── Trennlinie Sprache/Design ─────────────────────────────────────
         $sep = New-Object 'System.Windows.Forms.Panel'
         $sep.Location  = New-Pt 12 185
         $sep.Size      = New-Sz 396 1
         $sep.BackColor = $C_SEP
 
+        # ── Design (Theme) ────────────────────────────────────────────────
+        $lblTheme = New-Object 'System.Windows.Forms.Label'
+        $lblTheme.Text      = $T.DlgThemeSection
+        $lblTheme.Location  = New-Pt 12 194
+        $lblTheme.Size      = New-Sz 396 20
+        $lblTheme.Font      = $F_SEC
+        $lblTheme.ForeColor = $C_FG2; $lblTheme.BackColor = $C_BG
+
+        # Panel als eigene Gruppe damit Theme-Radios die Sprach-Radios nicht beeinflussen
+        $pnlTheme = New-Object 'System.Windows.Forms.Panel'
+        $pnlTheme.Location  = New-Pt 0 210
+        $pnlTheme.Size      = New-Sz 420 32
+        $pnlTheme.BackColor = $C_BG
+
+        $rbDark = New-Object 'System.Windows.Forms.RadioButton'
+        $rbDark.Text      = $T.DlgThemeDark
+        $rbDark.Location  = New-Pt 16 4
+        $rbDark.Size      = New-Sz 188 24
+        $rbDark.ForeColor = $C_FG; $rbDark.BackColor = $C_BG
+        $rbDark.Checked   = ($script:currentTheme -eq 'dark')
+
+        $rbLight = New-Object 'System.Windows.Forms.RadioButton'
+        $rbLight.Text      = $T.DlgThemeLight
+        $rbLight.Location  = New-Pt 210 4
+        $rbLight.Size      = New-Sz 188 24
+        $rbLight.ForeColor = $C_FG; $rbLight.BackColor = $C_BG
+        $rbLight.Checked   = ($script:currentTheme -eq 'light')
+
+        $pnlTheme.Controls.AddRange(@($rbDark, $rbLight))
+
+        # ── Trennlinie Design/LogPfad ─────────────────────────────────────
+        $sepTheme = New-Object 'System.Windows.Forms.Panel'
+        $sepTheme.Location  = New-Pt 12 250
+        $sepTheme.Size      = New-Sz 396 1
+        $sepTheme.BackColor = $C_SEP
+
         # ── Default LogFile-Pfad Abschnitt ────────────────────────────────
         $lblSection = New-Object 'System.Windows.Forms.Label'
         $lblSection.Text      = $T.DlgDefaultLogSection
-        $lblSection.Location  = New-Pt 12 196
+        $lblSection.Location  = New-Pt 12 258
         $lblSection.Size      = New-Sz 396 20
         $lblSection.Font      = $F_SEC
         $lblSection.ForeColor = $C_FG2; $lblSection.BackColor = $C_BG
 
         $chkDefault = New-Object 'System.Windows.Forms.CheckBox'
         $chkDefault.Text      = $T.DlgDefaultLogEnabled
-        $chkDefault.Location  = New-Pt 12 222
+        $chkDefault.Location  = New-Pt 12 284
         $chkDefault.Size      = New-Sz 396 24
         $chkDefault.ForeColor = $C_FG; $chkDefault.BackColor = $C_BG
         $chkDefault.Checked   = $script:defaultLogEnabled
 
         $tbDefaultPath = New-Object 'System.Windows.Forms.TextBox'
         $tbDefaultPath.Text        = $script:defaultLogPath
-        $tbDefaultPath.Location    = New-Pt 12 256
+        $tbDefaultPath.Location    = New-Pt 12 318
         $tbDefaultPath.Size        = New-Sz 310 26
         $tbDefaultPath.BackColor   = $C_BG2; $tbDefaultPath.ForeColor = $C_FG
         $tbDefaultPath.BorderStyle = 'FixedSingle'
@@ -931,7 +1011,7 @@ function GenerateForm {
 
         $btnBrowse = New-Object 'System.Windows.Forms.Button'
         $btnBrowse.Text      = '...'
-        $btnBrowse.Location  = New-Pt 330 254
+        $btnBrowse.Location  = New-Pt 330 316
         $btnBrowse.Size      = New-Sz 78 30
         $btnBrowse.FlatStyle = 'Flat'
         $btnBrowse.FlatAppearance.BorderColor = $C_SEP
@@ -950,10 +1030,24 @@ function GenerateForm {
             if ($p) { $tbDefaultPath.Text = $p }
         })
 
+        # ── Trennlinie LogPfad/Optionen ───────────────────────────────────
+        $sep2 = New-Object 'System.Windows.Forms.Panel'
+        $sep2.Location  = New-Pt 12 358
+        $sep2.Size      = New-Sz 396 1
+        $sep2.BackColor = $C_SEP
+
+        # ── DisableFolderDelete im Datei-Modus ────────────────────────────
+        $chkDisableFolderDelete = New-Object 'System.Windows.Forms.CheckBox'
+        $chkDisableFolderDelete.Text      = $T.DlgDisableFolderDeleteInFileMode
+        $chkDisableFolderDelete.Location  = New-Pt 12 370
+        $chkDisableFolderDelete.Size      = New-Sz 396 24
+        $chkDisableFolderDelete.ForeColor = $C_FG; $chkDisableFolderDelete.BackColor = $C_BG
+        $chkDisableFolderDelete.Checked   = $script:disableFolderDeleteInFileMode
+
         # ── OK / Abbrechen ────────────────────────────────────────────────
         $btnOK = New-Object 'System.Windows.Forms.Button'
         $btnOK.Text         = $T.BtnOK
-        $btnOK.Location     = New-Pt 210 326
+        $btnOK.Location     = New-Pt 210 418
         $btnOK.Size         = New-Sz 96 32
         $btnOK.DialogResult = 'OK'
         $btnOK.FlatStyle    = 'Flat'
@@ -963,7 +1057,7 @@ function GenerateForm {
 
         $btnCancel = New-Object 'System.Windows.Forms.Button'
         $btnCancel.Text         = $T.BtnCancel
-        $btnCancel.Location     = New-Pt 314 326
+        $btnCancel.Location     = New-Pt 314 418
         $btnCancel.Size         = New-Sz 94 32
         $btnCancel.DialogResult = 'Cancel'
         $btnCancel.FlatStyle    = 'Flat'
@@ -972,21 +1066,30 @@ function GenerateForm {
         $btnCancel.BackColor = $C_BG2; $btnCancel.ForeColor = $C_FG2
 
         $f.AcceptButton = $btnOK; $f.CancelButton = $btnCancel
-        $f.Controls.AddRange(@($lbl, $sep, $lblSection, $chkDefault,
-                                $tbDefaultPath, $btnBrowse, $btnOK, $btnCancel))
+        $f.Controls.AddRange(@($lbl, $sep, $lblTheme, $pnlTheme,
+                                $sepTheme, $lblSection, $chkDefault,
+                                $tbDefaultPath, $btnBrowse,
+                                $sep2, $chkDisableFolderDelete,
+                                $btnOK, $btnCancel))
 
         if ($f.ShowDialog($formMain) -ne 'OK') { return }
 
         # ── Einstellungen speichern ───────────────────────────────────────
-        $newEnabled = $chkDefault.Checked
-        $newPath    = $tbDefaultPath.Text.Trim()
-        $script:defaultLogEnabled = $newEnabled
-        $script:defaultLogPath    = $newPath
+        $newEnabled               = $chkDefault.Checked
+        $newPath                  = $tbDefaultPath.Text.Trim()
+        $newDisableFolderDelete   = $chkDisableFolderDelete.Checked
+        $newTheme                 = if ($rbLight.Checked) { 'light' } else { 'dark' }
+        $script:defaultLogEnabled             = $newEnabled
+        $script:defaultLogPath                = $newPath
+        $script:disableFolderDeleteInFileMode = $newDisableFolderDelete
 
         $sel = ($rb.Values | Where-Object { $_.Checked } | Select-Object -First 1)
         $newLang = if ($sel) { $sel.Tag } else { $CURRENT_LANG }
 
-        Write-AppSettings $newLang ($newEnabled.ToString().ToLower()) $newPath
+        Write-AppSettings $newLang ($newEnabled.ToString().ToLower()) $newPath ($newDisableFolderDelete.ToString().ToLower()) $newTheme
+
+        # Modus neu anwenden damit chkDelete-Zustand sofort korrekt ist
+        Set-QuelleMode $script:quelleMode
 
         # Log-Pfad sofort anwenden wenn aktiviert und noch nicht gesetzt
         if ($newEnabled -and $newPath -and -not $lblLog.Tag) {
@@ -995,8 +1098,10 @@ function GenerateForm {
             Update-StartButton; Update-PathStatus
         }
 
-        # Sprachaenderung → Neustart erforderlich
-        if ($sel -and $sel.Tag -ne $CURRENT_LANG) {
+        # Neustart erforderlich bei Sprach- oder Theme-Änderung
+        $langChanged  = ($sel -and $sel.Tag -ne $CURRENT_LANG)
+        $themeChanged = ($newTheme -ne $script:currentTheme)
+        if ($langChanged -or $themeChanged) {
             [System.Windows.Forms.MessageBox]::Show(
                 $T.DlgLangRestart, $T.DlgLangTitle, 'OK', 'Information') | Out-Null
         }
@@ -1027,6 +1132,14 @@ function GenerateForm {
         $isFile = ($mode -eq 'file')
         $chkDeleteFile.Enabled = $isFile
         if (-not $chkDeleteFile.Enabled) { $chkDeleteFile.Checked = $false }
+        # chkDelete im Datei-Modus sperren, falls Option aktiviert
+        if ($isFile -and $script:disableFolderDeleteInFileMode) {
+            $chkDelete.Enabled = $false
+            $chkDelete.Checked = $false
+        } else {
+            $chkDelete.Enabled = $true
+        }
+        Update-OptionDots
     }
 
     function Update-StartButton {
@@ -1034,6 +1147,9 @@ function GenerateForm {
         $btnStart.Enabled   = $ok
         $btnStart.BackColor = if ($ok) { $C_ACCENT } else { $C_BG2 }
         $btnStart.ForeColor = if ($ok) { [System.Drawing.Color]::White } else { $C_FG2 }
+        # Ini speichern: aktiv sobald alle drei Pfade gesetzt (unabh. von Erreichbarkeit)
+        $btnSaveIni.Enabled   = $ok
+        $btnSaveIni.ForeColor = if ($ok) { $C_FG } else { $C_FG2 }
     }
 
     function Test-FolderWritable ($folderPath) {
@@ -1161,14 +1277,8 @@ function GenerateForm {
 
     $btnQuelleMode_Click = {
         $newMode = if ($script:quelleMode -eq 'folder') { 'file' } else { 'folder' }
+        & $btnClearLog_Click   # vollständiger Reset vor dem Moduswechsel
         Set-QuelleMode $newMode
-        # Pfad zurücksetzen wenn Modus wechselt
-        $lblQuelle.Text      = $T.LblNoPath
-        $lblQuelle.ForeColor = $C_WARN
-        $lblQuelle.Tag       = $null
-        $lblDotQuelle.ForeColor = $C_BG
-        Update-StartButton
-        Update-PathStatus
     }
 
     $btnQuelle_Click = {
@@ -1278,7 +1388,17 @@ function GenerateForm {
         $btnStart.Text       = $T.BtnStart
         $btnStart.BackColor  = $C_ACCENT
         $btnStart.ForeColor  = [System.Drawing.Color]::White
-        $progressBar.Visible = $false
+        $btnQuelle.Enabled     = $true
+        $btnQuelle.BackColor   = $C_BG2
+        $btnQuelle.ForeColor   = $C_FG
+        $btnZiel.Enabled       = $true
+        $btnZiel.BackColor     = $C_BG2
+        $btnZiel.ForeColor     = $C_FG
+        $btnClearLog.Enabled   = $true
+        $btnClearLog.BackColor = $C_FG2
+        $btnClearLog.ForeColor = $C_BG2
+        $btnQuelleMode.Enabled = $true
+        $progressBar.Visible   = $false
     }
 
     $btnStart_Click = {
@@ -1314,7 +1434,17 @@ function GenerateForm {
         $btnStart.Enabled    = $false
         $btnStart.Text       = $T.BtnRunning
         $btnStart.BackColor  = $C_BG2
-        $progressBar.Visible = $true
+        $btnQuelle.Enabled     = $false
+        $btnQuelle.BackColor   = $C_BG
+        $btnQuelle.ForeColor   = $C_FG2
+        $btnZiel.Enabled       = $false
+        $btnZiel.BackColor     = $C_BG
+        $btnZiel.ForeColor     = $C_FG2
+        $btnClearLog.Enabled   = $false
+        $btnClearLog.BackColor = $C_BG2
+        $btnClearLog.ForeColor = $C_FG2
+        $btnQuelleMode.Enabled = $false
+        $progressBar.Visible   = $true
         $rtbLog.Clear()
 
         $doVerify = $chkVerify.Checked
@@ -1607,7 +1737,7 @@ function GenerateForm {
     $labelVersion.Dock      = 'Left'
     $labelVersion.Width     = 200
     $labelVersion.Font      = $F_SM
-    $labelVersion.ForeColor = $C_DIMTXT
+    $labelVersion.ForeColor = if ($script:currentTheme -eq 'light') { $C_ACCENT } else { $C_DIMTXT }
     $labelVersion.TextAlign = 'MiddleLeft'
     $panelFooter.Controls.Add($labelVersion)
     $linkCopyright.Text            = $APP_COPYRIGHT
@@ -1710,20 +1840,34 @@ function GenerateForm {
     # Bar + Title danach (index 1+2)
     Build-SectionHeader $secOpt $secOptBar $secOptTitle $T.SecOpt
 
-    function Set-CheckBox ($cb, $parent, $text, $yPos, $checked) {
+    function Set-CheckBox ($cb, $dot, $parent, $text, $yPos, $checked) {
+        # Farbpunkt links neben der Checkbox
+        $dot.Text      = [char]0x25CF
+        $dot.Location  = New-Object 'System.Drawing.Point'(10, ($yPos + 5))
+        $dot.Size      = New-Object 'System.Drawing.Size'(14, 14)
+        $dot.Font      = New-Font 'Segoe UI' 9
+        $dot.ForeColor = $C_DOT_OK
+        $dot.BackColor = $C_BG
+        $dot.TextAlign = 'MiddleCenter'
+        $dot.Anchor    = $ANC_TL
+        $parent.Controls.Add($dot)
+        # Checkbox mit kleinem Abstand rechts vom Punkt
         $cb.Text      = "  $text"
         $cb.Checked   = $checked
-        $cb.Location  = New-Object 'System.Drawing.Point'(10, $yPos)
-        $cb.Size      = New-Object 'System.Drawing.Size'(780, 24)
+        $cb.AutoSize  = $false
+        $cb.FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
+        $cb.Location  = New-Object 'System.Drawing.Point'(28, $yPos)
+        $cb.Size      = New-Object 'System.Drawing.Size'(762, 24)
         $cb.Font      = $F_UI
-        $cb.ForeColor = $C_FG
+        $cb.ForeColor = if ($checked) { $C_FG } else { $C_FG2 }
         $cb.BackColor = $C_BG
         $cb.Anchor    = $ANC_TLR
+        $cb.add_CheckedChanged({ $this.ForeColor = if ($this.Checked) { $C_FG } else { $C_FG2 } })
         $parent.Controls.Add($cb)
     }
-    Set-CheckBox $chkVerify      $secOptContent $T.ChkVerify     4  $true
-    Set-CheckBox $chkDelete      $secOptContent $T.ChkDelete     32 $false
-    Set-CheckBox $chkDeleteFile  $secOptContent $T.ChkDeleteFile 60 $false
+    Set-CheckBox $chkVerify     $lblDotVerify     $secOptContent $T.ChkVerify     4  $true
+    Set-CheckBox $chkDelete     $lblDotDelete     $secOptContent $T.ChkDelete     32 $false
+    Set-CheckBox $chkDeleteFile $lblDotDeleteFile $secOptContent $T.ChkDeleteFile 60 $false
     $chkDeleteFile.Enabled = $false   # initial Ordner-Modus → ausgegraut
 
     # Im Datei-Modus: chkDelete deaktiviert chkDeleteFile (Ordner-Löschung schliesst Datei ein)
@@ -1732,7 +1876,28 @@ function GenerateForm {
             $chkDeleteFile.Enabled = -not $chkDelete.Checked
             if ($chkDelete.Checked) { $chkDeleteFile.Checked = $false }
         }
+        Update-OptionDots
     })
+
+    function Update-OptionDots {
+        # chkVerify: immer verfügbar → grün
+        $lblDotVerify.ForeColor = $C_DOT_OK
+
+        # chkDelete: rot wenn durch Einstellung gesperrt, sonst grün
+        $isFile = ($script:quelleMode -eq 'file')
+        if ($isFile -and $script:disableFolderDeleteInFileMode) {
+            $lblDotDelete.ForeColor = $C_ERR       # rot: durch Einstellungen deaktiviert
+        } else {
+            $lblDotDelete.ForeColor = $C_DOT_OK    # grün: verfügbar
+        }
+
+        # chkDeleteFile: grün wenn aktiv, orange wenn durch Modus/chkDelete ausgegraut
+        if ($chkDeleteFile.Enabled) {
+            $lblDotDeleteFile.ForeColor = $C_DOT_OK    # grün: verfügbar
+        } else {
+            $lblDotDeleteFile.ForeColor = $C_DOT_WARN  # orange: ausgegraut
+        }
+    }
 
     #-- spacer2 ---------------------------------------------------------------
     $sp2 = New-Object 'System.Windows.Forms.Panel'
@@ -1773,11 +1938,12 @@ function GenerateForm {
     $btnSaveIni.Size      = New-Object 'System.Drawing.Size'(135, 38)
     $btnSaveIni.BackColor = $C_BG2
     $btnSaveIni.ForeColor = $C_FG2
+    $btnSaveIni.Enabled   = $false
     $btnSaveIni.Font      = $F_UI
     $btnSaveIni.FlatStyle = 'Flat'
     $btnSaveIni.FlatAppearance.BorderColor        = New-Color '#4a5070'
     $btnSaveIni.FlatAppearance.BorderSize         = 1
-    $btnSaveIni.FlatAppearance.MouseOverBackColor = New-Color '#3a3a5e'
+    $btnSaveIni.FlatAppearance.MouseOverBackColor = $C_INI_HOVER
     $btnSaveIni.Cursor    = [System.Windows.Forms.Cursors]::Hand
     $btnSaveIni.Anchor    = [System.Windows.Forms.AnchorStyles]::None
 
@@ -1790,7 +1956,7 @@ function GenerateForm {
     $btnLoadIni.FlatStyle = 'Flat'
     $btnLoadIni.FlatAppearance.BorderColor        = New-Color '#4a5070'
     $btnLoadIni.FlatAppearance.BorderSize         = 1
-    $btnLoadIni.FlatAppearance.MouseOverBackColor = New-Color '#3a3a5e'
+    $btnLoadIni.FlatAppearance.MouseOverBackColor = $C_INI_HOVER
     $btnLoadIni.Cursor    = [System.Windows.Forms.Cursors]::Hand
     $btnLoadIni.Anchor    = [System.Windows.Forms.AnchorStyles]::None
 

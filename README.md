@@ -1,4 +1,4 @@
-# Easy Robocopy interface - ERi-Backup-App · v1.7.1.1
+# Easy Robocopy interface - ERi-Backup-App · v1.7.5.1
 
 A lightweight, modern Windows backup utility built with PowerShell and WinForms, powered by Microsoft's robust Robocopy engine.
 
@@ -22,6 +22,11 @@ A lightweight, modern Windows backup utility built with PowerShell and WinForms,
 - **Split status bar** — general backup messages on the left, path status summary on the right, always visible at a glance
 - **Settings dialog (⚙)** — configure language and default log path in one place; tooltip shows the dialog name in the active language
   - **Default LogFile Path** — optionally pre-fill the log folder path automatically on every app start and reset; toggle ON/OFF with a single checkbox
+  - **Disable folder delete in file mode** — optional setting (default: on) that grays out the *Delete destination folder* option when in file mode, preventing accidental folder deletions
+- **Color-coded option indicators** — each option checkbox shows a small dot: green = available, orange = grayed out by current mode, red = disabled by a setting; independent of the checked/unchecked state
+- **Checked/unchecked visual distinction** — active (checked) options are displayed in bright text, inactive ones in a muted tone for at-a-glance readability
+- **Light and dark theme** — switchable in the Settings dialog (🌙 Dark / ☀ Light); applied at startup, requires restart; all UI elements including path labels, buttons, log area and status bar adapt to the selected theme
+- **Backup lockout** — Source, Destination, Reset and Mode-toggle buttons are disabled and visually dimmed during an active backup to prevent accidental changes
 - **Profile filenames with mode prefix** — saved profiles are automatically prefixed with `Folder_` or `File_` based on the active source mode
 - **Clean startup** — source and destination paths are always empty on launch; paths are only loaded via named profiles, avoiding stale or incorrect path combinations
 - Save and load named backup profiles (source, destination, log folder, source mode, options) as `.ini` files — ideal for managing multiple backup jobs
